@@ -20,6 +20,15 @@
 
 import sys
 import struct
+import binascii
+
+def payload_crc32_checksum(payload_file):
+    crc32_checksum = 0
+    payload = open(payload_file, mode='rb')
+    for eachLine in payload:
+        crc32_checksum = binascii.crc32(eachLine, crc32_checksum)
+    payload.close
+    return (crc32_checksum & 0xFFFFFFFF)
 
 with open(sys.argv[1], mode='rb') as file:
         fileContent = file.read()
@@ -33,20 +42,19 @@ ucode_version = 1
 ucode_size_bytes = len(fileContent)
 ucode_array_offset_bytes = 256
 firmware_size_bytes = ucode_size_bytes + ucode_array_offset_bytes
-crc32 = 0
+crc32 = payload_crc32_checksum(sys.argv[1])
 
 with open(sys.argv[2], mode='wb') as output:
-        output.write(struct.pack('IIHHHHIIII', 
-                                 firmware_size_bytes, 
-                                 header_size_bytes, 
-                                 header_version_major, 
-                                 header_version_minor, 
-                                 ip_version_major, 
-                                 ip_version_minor, 
-                                 ucode_version, 
-                                 ucode_size_bytes, 
-                                 ucode_array_offset_bytes, 
+        output.write(struct.pack('IIHHHHIIII',
+                                 firmware_size_bytes,
+                                 header_size_bytes,
+                                 header_version_major,
+                                 header_version_minor,
+                                 ip_version_major,
+                                 ip_version_minor,
+                                 ucode_version,
+                                 ucode_size_bytes,
+                                 ucode_array_offset_bytes,
                                  crc32))
         output.write(bytearray(ucode_array_offset_bytes - header_size_bytes))
         output.write(fileContent)
-        
