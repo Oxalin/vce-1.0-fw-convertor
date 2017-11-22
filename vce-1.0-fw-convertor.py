@@ -44,6 +44,16 @@ ucode_array_offset_bytes = 256
 firmware_size_bytes = ucode_size_bytes + ucode_array_offset_bytes
 crc32 = payload_crc32_checksum(sys.argv[1])
 
+print ("Header's properties to be added to original VCE firmware [{}]".format(sys.argv[1]))
+print ("Total size of new firmware [{}]: {}B [uint32]".format(sys.argv[2], firmware_size_bytes))
+print ("Header's size: {}B [uint32]".format(header_size_bytes))
+print ("Header's version: {}.{} [2*uint16]]".format(header_version_major, header_version_minor))
+print ("IP [VCE] version: {}.{} [2*uint16]".format(ip_version_major, ip_version_minor))
+print ("uCode version: {} [uint32]".format(ucode_version))
+print ("uCode's size: {}B [uint32]".format(ucode_size_bytes))
+print ("uCode's offset: {}B [uint32]".format(ucode_array_offset_bytes))
+print ("uCode's CRC32 checksum: {} [uint32]".format(crc32))
+
 with open(sys.argv[2], mode='wb') as output:
         output.write(struct.pack('IIHHHHIIII',
                                  firmware_size_bytes,
