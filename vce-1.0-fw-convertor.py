@@ -6,7 +6,7 @@
 # Structure of the header is as follow:
 #
 #struct common_firmware_header {
-#        uint32_t size_bytes; /* size of the entire header with full offset+image(s) in bytes: 256+original firmware's length */
+#        uint32_t size_bytes; /* size of the entire header with full offset (common firmware header)+image(s) in bytes: 256 + original firmware's length */
 #        uint32_t header_size_bytes; /* size of just the header's structure in bytes: 32 */
 #        uint16_t header_version_major; /* header version: 1 */
 #        uint16_t header_version_minor; /* header version: 0 */
@@ -18,9 +18,10 @@
 #        uint32_t crc32;  /* crc32 checksum of the payload */
 #};
 
-import sys
-import struct
 import binascii
+import re
+import struct
+import sys
 
 def payload_crc32_checksum(payload_file):
     crc32_checksum = 0
@@ -43,6 +44,56 @@ ucode_size_bytes = len(fileContent)
 ucode_array_offset_bytes = 256
 firmware_size_bytes = ucode_size_bytes + ucode_array_offset_bytes
 crc32 = payload_crc32_checksum(sys.argv[1])
+
+# Find ucode version from actual firmware
+fw_version = "[ATI LIB=VCEFW,"  # 15 Bytes / max 25 bytes
+fb_version = "[ATI LIB=VCEFWSTATS," # 20 Bytes / max 32 bytes
+bfw_version = bytes(b"[ATI LIB=VCEFW,")
+bfb_version = bytes(b"[ATI LIB=VCEFWSTATS,")
+
+index = fileContent.find(bfw_version)
+if (index == 0) :
+    print("fw_version not found")
+    exit
+
+# Search for version string
+# Extract version string with a maximum length of 25 bytes
+# Then split this array at each "." and the end character "]"
+ucodeString = (fileContent[index+len(bfw_version) : index+25]).decode('utf-8')
+subUcodeString = re.split("]", ucodeString)[0]
+splittedUCodeString = re.split("\.", subUcodeString)
+
+if len(splittedUCodeString) != 3:
+    print("fw_version format did not match")
+    exit
+
+version_major = int(splittedUCodeString[0])
+version_minor = int(splittedUCodeString[1])
+binary_id = int(splittedUCodeString[2])
+print("uCode version found: {}.{}.{}".format(version_major, version_minor, binary_id))
+
+# ucode_version's format is 32 bits as version_major 12 bits | version_minor 12 bits | binary_id 8 bits
+ucode_version = ((version_major << 20) | (version_minor << 8) | (binary_id << 0))
+
+# # search for feedback version
+index = fileContent.find(bfb_version)
+if (index == 0) :
+    print("fb_version not found")
+    exit
+
+# Search for feedback string, even though it is not used in the CFH
+# Extract version string with a maximum length of 32 bytes
+# Then split this array at each "." and the end character "]"
+feedbackString = (fileContent[index+len(bfb_version) : index+32]).decode('utf-8')
+subFeedbackString= re.split("]", feedbackString)
+
+if len(subFeedbackString) != 2:
+    print("fb_version format did not match")
+    exit
+
+version_feedback = int(subFeedbackString[0])
+print("Feedback version found: {}".format(version_feedback))
+
 
 cfh_struct_format = "IIHHHHIIII"
 
