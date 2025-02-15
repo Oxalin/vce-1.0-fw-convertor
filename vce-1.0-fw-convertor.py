@@ -61,7 +61,7 @@ if (index == 0) :
 # Then split this array at each "." and the end character "]"
 ucodeString = (fileContent[index+len(bfw_version) : index+25]).decode('utf-8')
 subUcodeString = re.split("]", ucodeString)[0]
-splittedUCodeString = re.split("\.", subUcodeString)
+splittedUCodeString = re.split("\\.", subUcodeString)
 
 if len(splittedUCodeString) != 3:
     print("fw_version format did not match")
